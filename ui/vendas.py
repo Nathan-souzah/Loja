@@ -6,9 +6,9 @@ from vendas import registrar_venda
 def tela():
     janela = tk.Toplevel()
     janela.title("Registrar Venda")
-    janela.geometry("400x300")
+    janela.geometry("800x600")
     
-    tk.label(janela, text="Selecione o produto:").pack()
+    tk.Label(janela, text="Selecione o produto:").pack()
     lista = tk.Listbox(janela, width=50)
     lista.pack()
     

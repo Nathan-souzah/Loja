@@ -5,7 +5,7 @@ from ui import cadastro, vendas, estoque
 def main():
     root = tk.Tk()
     root.title("Sistema de Gestão de Loja")
-    root.geometry("400x300")
+    root.geometry("1200x800")
 
     btn_cadastro = tk.Button(root, text="Cadastra Produto", command=cadastro.tela).pack(pady=10)
 

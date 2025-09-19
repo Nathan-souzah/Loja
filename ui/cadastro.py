@@ -6,7 +6,7 @@ from api import buscar_internet
 def tela():
     janela = tk.Toplevel()
     janela.title("Cadastro de Produto")
-    janela.geometry("400x300")
+    janela.geometry("800x600")
     
     tk.Label(janela, text="Código de Barras:").pack()
     entry_codigo = tk.Entry(janela)

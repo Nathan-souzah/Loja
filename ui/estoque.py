@@ -4,7 +4,7 @@ from produtos import listar_produtos
 def tela():
     janela = tk.Toplevel()
     janela.title("Estoque")
-    janela.geometry("500x400")
+    janela.geometry("800x600")
     
     lista = tk.Listbox(janela, width=80)
     lista.pack()
