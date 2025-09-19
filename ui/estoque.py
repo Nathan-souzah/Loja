@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import listar_produtos
+from produtos import listar_produtos
 
 def tela():
     janela = tk.Toplevel()
