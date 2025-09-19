@@ -1,5 +1,6 @@
 import tkinter as tk
-from tkinter import cadastro, vendas, estoque
+from ui import cadastro, vendas, estoque
+
 
 def main():
     root = tk.Tk()
