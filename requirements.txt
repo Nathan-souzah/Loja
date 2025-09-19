@@ -1,0 +1,4 @@
+# Requisistos para o Sistema de Gestão de lojas
+# Compativel com python 3.13
+
+requests==2.31.0
