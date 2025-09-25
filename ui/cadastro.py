@@ -57,7 +57,18 @@ def tela():
         except ValueError:
             messagebox.showerror("Erro", "Preço ou quantidade inválidos!")
 
-    # Botões
-    ctk.CTkButton(janela, text="Buscar na Internet", fg_color=cfg.get("button_color"), command=buscar).pack(pady=5)
-    ctk.CTkButton(janela, text="Salvar", fg_color=cfg.get("button_color"), command=salvar).pack(pady=5)
-    ctk.CTkButton(janela, text="Cancelar", fg_color=cfg.get("button_color"), command=janela.destroy).pack(pady=5)
+    # Frame para os botões em linha
+    frame_botoes = ctk.CTkFrame(janela, fg_color=cfg.get("bg_color"))
+    frame_botoes.pack(pady=20)
+
+    botoes = [
+        ("Buscar na Internet", buscar),
+        ("Salvar", salvar),
+        ("Cancelar", janela.destroy)
+    ]
+
+    for index, (texto, comando) in enumerate(botoes):
+        coluna = index % 3
+        ctk.CTkButton(frame_botoes, text=texto, fg_color=cfg.get("button_color"),
+                      width=180, height=50, command=comando).grid(row=0, column=coluna, padx=10)
+

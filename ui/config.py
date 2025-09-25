@@ -9,8 +9,8 @@ class Config:
     def __init__(self):
         if not os.path.exists(CONFIG_FILE):
             self.dados = {
-                "bg_color": "#FFFFFF",
-                "font_color": "#000000",
+                "bg_color": "#0C0C0C",
+                "font_color": "#F6F2F2",
                 "button_color": "#0078D7",  # nova opção
                 "font": "Arial",
                 "logo_path": ""

@@ -17,29 +17,33 @@ def main():
 
     # Container para os botões
     frame = ctk.CTkFrame(root, fg_color=cfg.get("bg_color"))
-    frame.pack(expand=True)
+    frame.pack(expand=True, pady=50)
 
-    # Botões principais
-    ctk.CTkButton(frame, text="Cadastrar Produto", fg_color=cfg.get("button_color"),
-                  font=(cfg.get("font"), 14), width=200, height=50, command=cadastro.tela).pack(pady=20)
+    # Lista de botões: (texto, função)
+    botoes = [
+        ("Cadastrar Produto", cadastro.tela),
+        ("Registrar Venda", vendas.tela),
+        ("Ver Estoque", estoque.tela),
+        ("Dashboard de Indicadores", dashboard.tela),
+        ("Configurações", cfg_module.tela),
+        ("Sair", root.quit)
+    ]
 
-    ctk.CTkButton(frame, text="Registrar Venda", fg_color=cfg.get("button_color"),
-                  font=(cfg.get("font"), 14), width=200, height=50, command=vendas.tela).pack(pady=20)
-
-    ctk.CTkButton(frame, text="Ver Estoque", fg_color=cfg.get("button_color"),
-                  font=(cfg.get("font"), 14), width=200, height=50, command=estoque.tela).pack(pady=20)
-
-    ctk.CTkButton(frame, text="Dashboard de Indicadores", fg_color=cfg.get("button_color"),
-                  font=(cfg.get("font"), 14), width=200, height=50, command=dashboard.tela).pack(pady=20)
-
-    ctk.CTkButton(frame, text="Configurações", fg_color=cfg.get("button_color"),
-                  font=(cfg.get("font"), 14), width=200, height=50, command=cfg_module.tela).pack(pady=20)
-
-    ctk.CTkButton(frame, text="Sair", fg_color=cfg.get("button_color"),
-                  font=(cfg.get("font"), 14), width=200, height=50, command=root.quit).pack(pady=20)
+    # Inserir botões em grid: 3 por linha
+    for index, (texto, comando) in enumerate(botoes):
+        linha = index // 3
+        coluna = index % 3
+        ctk.CTkButton(
+            frame,
+            text=texto,
+            fg_color=cfg.get("button_color"),
+            font=(cfg.get("font"), 14),
+            width=300,
+            height=70,
+            command=comando
+        ).grid(row=linha, column=coluna, padx=20, pady=20)
 
     root.mainloop()
-
 
 if __name__ == "__main__":
     main()

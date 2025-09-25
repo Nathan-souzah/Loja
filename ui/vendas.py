@@ -5,7 +5,7 @@ from vendas import registrar_venda
 from ui.config import criar_janela
 
 def tela():
-    janela, cfg = criar_janela("Registrar Venda", "800x600")
+    janela, cfg = criar_janela("Registrar Venda", "800x650")
     carrinho = []
 
     # Código de barras
@@ -100,8 +100,21 @@ def tela():
         else:
             messagebox.showerror("Erro", "Ocorreu um problema ao registrar a venda.")
 
-    # Botões
-    ctk.CTkButton(janela, text="Adicionar Produto", fg_color=cfg.get("button_color"), command=adicionar_produto).pack(pady=5)
-    ctk.CTkButton(janela, text="Remover Produto", fg_color=cfg.get("button_color"), command=remover_item).pack(pady=5)
-    ctk.CTkButton(janela, text="Finalizar Venda", fg_color=cfg.get("button_color"), command=finalizar_venda).pack(pady=10)
-    ctk.CTkButton(janela, text="Fechar", fg_color=cfg.get("button_color"), command=janela.destroy).pack(pady=5)
+    # Frame para os botões
+    frame_botoes = ctk.CTkFrame(janela, fg_color=cfg.get("bg_color"))
+    frame_botoes.pack(pady=20)
+
+    botoes = [
+        ("Adicionar Produto", adicionar_produto),
+        ("Remover Produto", remover_item),
+        ("Finalizar Venda", finalizar_venda),
+    ]
+
+    # Primeira linha: 3 botões
+    for index, (texto, comando) in enumerate(botoes):
+        ctk.CTkButton(frame_botoes, text=texto, fg_color=cfg.get("button_color"),
+                      width=180, height=50, command=comando).grid(row=0, column=index, padx=10, pady=5)
+
+    # Segunda linha: Fechar centralizado
+    ctk.CTkButton(frame_botoes, text="Fechar", fg_color=cfg.get("button_color"),
+                  width=180, height=50, command=janela.destroy).grid(row=1, column=0, columnspan=3, pady=5)
