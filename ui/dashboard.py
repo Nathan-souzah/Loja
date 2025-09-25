@@ -1,13 +1,12 @@
-import tkinter as tk
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import customtkinter as ctk
+from ui.config import criar_janela
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pandas as pd
 from database import conectar
 
 def tela():
-    janela = tk.Toplevel()
-    janela.title("Dashboard")
-    janela.geometry("900x600")
+    janela, cfg = criar_janela("Dashboard", "900x600")
 
     conn = conectar()
     df = pd.read_sql("SELECT * FROM vendas", conn)
@@ -18,9 +17,9 @@ def tela():
     ticket_medio = df["total"].mean()
     qtd_vendas = len(df)
 
-    tk.Label(janela, text=f"Faturamento: R$ {faturamento:.2f}", font=("Arial", 14)).pack(pady=5)
-    tk.Label(janela, text=f"Ticket Médio: R$ {ticket_medio:.2f}", font=("Arial", 14)).pack(pady=5)
-    tk.Label(janela, text=f"Número de Vendas: {qtd_vendas}", font=("Arial", 14)).pack(pady=5)
+    ctk.CTkLabel(janela, text=f"Faturamento: R$ {faturamento:.2f}", font=(cfg.get("font"),14), text_color=cfg.get("font_color")).pack(pady=5)
+    ctk.CTkLabel(janela, text=f"Ticket Médio: R$ {ticket_medio:.2f}", font=(cfg.get("font"),14), text_color=cfg.get("font_color")).pack(pady=5)
+    ctk.CTkLabel(janela, text=f"Número de Vendas: {qtd_vendas}", font=(cfg.get("font"),14), text_color=cfg.get("font_color")).pack(pady=5)
 
     # Agrupar por dia
     df["data"] = pd.to_datetime(df["data"])
@@ -33,4 +32,6 @@ def tela():
 
     canvas = FigureCanvasTkAgg(fig, master=janela)
     canvas.draw()
-    canvas.get_tk_widget().pack(fill="both", expand=True)
+    canvas.get_tk_widget().pack(fill="both", expand=True, pady=10)
+
+    ctk.CTkButton(janela, text="Fechar", fg_color=cfg.get("button_color"), command=janela.destroy).pack(pady=10)
