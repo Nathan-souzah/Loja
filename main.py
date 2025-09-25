@@ -1,5 +1,6 @@
 import customtkinter as ctk
 from ui import cadastro, vendas, estoque, dashboard, config
+
 def main():
     # Tema global
     ctk.set_appearance_mode("dark")  # ou "light"
@@ -14,7 +15,7 @@ def main():
     ctk.CTkButton(root, text="Registrar Venda", command=vendas.tela, width=200, height=50).pack(pady=20)
     ctk.CTkButton(root, text="Ver Estoque", command=estoque.tela, width=200, height=50).pack(pady=20)
     ctk.CTkButton(root, text="Dashboard de Indicadores", command=dashboard.tela, width=200, height=50).pack(pady=20)
-    ctk.CTkButton(root, text="Configurações", command=config.tela,width=200, height=50).pack(pady=20)
+    ctk.CTkButton(root, text="Configurações", command=config.tela, width=200, height=50).pack(pady=20)
     ctk.CTkButton(root, text="Sair", command=root.quit, width=200, height=50).pack(pady=20)
     
     root.mainloop()

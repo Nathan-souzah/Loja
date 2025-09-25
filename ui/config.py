@@ -1,4 +1,5 @@
 import customtkinter as ctk
+from tkinter import colorchooser
 import json
 import os
 
@@ -29,42 +30,56 @@ class Config:
         with open(CONFIG_FILE, "w") as f:
             json.dump(self.dados, f, indent=4)
 
-# Função independente para chamar no main.py
+
 def tela():
     cfg = Config()
     
     janela = ctk.CTkToplevel()
     janela.title("Configurações")
-    janela.geometry("400x300")
+    janela.geometry("400x350")
     janela.resizable(False, False)
 
-    # Frame principal
     frame = ctk.CTkFrame(janela)
     frame.pack(padx=20, pady=20, fill="both", expand=True)
 
-    # Cor de fundo
+    # ---------- Cor de fundo ----------
     ctk.CTkLabel(frame, text="Cor de fundo:").pack(anchor="w", pady=(0,5))
-    cor_bg = ctk.CTkEntry(frame)
-    cor_bg.insert(0, cfg.get("bg_color"))
-    cor_bg.pack(fill="x", pady=(0,10))
+    cor_bg_var = ctk.StringVar(value=cfg.get("bg_color"))
+    cor_bg_entry = ctk.CTkEntry(frame, textvariable=cor_bg_var)
+    cor_bg_entry.pack(fill="x", pady=(0,5))
 
-    # Cor da fonte
+    def escolher_cor_bg():
+        cor = colorchooser.askcolor(title="Escolher cor de fundo")[1]
+        if cor:
+            cor_bg_var.set(cor)
+
+    ctk.CTkButton(frame, text="Selecionar cor", command=escolher_cor_bg).pack(pady=(0,10))
+
+    # ---------- Cor da fonte ----------
     ctk.CTkLabel(frame, text="Cor da fonte:").pack(anchor="w", pady=(0,5))
-    cor_font = ctk.CTkEntry(frame)
-    cor_font.insert(0, cfg.get("font_color"))
-    cor_font.pack(fill="x", pady=(0,10))
+    cor_font_var = ctk.StringVar(value=cfg.get("font_color"))
+    cor_font_entry = ctk.CTkEntry(frame, textvariable=cor_font_var)
+    cor_font_entry.pack(fill="x", pady=(0,5))
 
-    # Fonte
+    def escolher_cor_font():
+        cor = colorchooser.askcolor(title="Escolher cor da fonte")[1]
+        if cor:
+            cor_font_var.set(cor)
+
+    ctk.CTkButton(frame, text="Selecionar cor", command=escolher_cor_font).pack(pady=(0,10))
+
+    # ---------- Fonte ----------
     ctk.CTkLabel(frame, text="Fonte:").pack(anchor="w", pady=(0,5))
-    fonte = ctk.CTkEntry(frame)
-    fonte.insert(0, cfg.get("font"))
-    fonte.pack(fill="x", pady=(0,10))
+    fontes_disponiveis = ["Arial", "Helvetica", "Courier", "Times New Roman", "Verdana"]
+    fonte_var = ctk.StringVar(value=cfg.get("font"))
+    fonte_combo = ctk.CTkComboBox(frame, values=fontes_disponiveis, variable=fonte_var)
+    fonte_combo.pack(fill="x", pady=(0,10))
 
-    # Botão Salvar
+    # ---------- Botão salvar ----------
     def salvar_config():
-        cfg.set("bg_color", cor_bg.get())
-        cfg.set("font_color", cor_font.get())
-        cfg.set("font", fonte.get())
+        cfg.set("bg_color", cor_bg_var.get())
+        cfg.set("font_color", cor_font_var.get())
+        cfg.set("font", fonte_var.get())
         janela.destroy()
 
     ctk.CTkButton(frame, text="Salvar", command=salvar_config).pack(pady=10)
