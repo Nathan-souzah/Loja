@@ -1,61 +1,64 @@
+# ui/estoque.py
 import customtkinter as ctk
 from tkinter import ttk
 from ui.config import criar_janela
 from produtos import listar_produtos
 
 def tela():
-    janela, cfg = criar_janela("Estoque - PDV", "1400x800")
+    janela, cfg = criar_janela("Estoque", "900x650")
 
-    # ---------- FRAME CENTRAL ----------
-    frame_central = ctk.CTkFrame(janela, fg_color=cfg.get("bg_color"))
-    frame_central.pack(pady=10, padx=20, fill="both", expand=True)
+    # === Frame principal ===
+    frame = ctk.CTkFrame(janela, fg_color=cfg.get("bg_color"), corner_radius=12)
+    frame.place(relx=0.5, rely=0.5, anchor="center", relwidth=0.95, relheight=0.95)
 
-    # ---------- PESQUISA ----------
-    frame_pesquisa = ctk.CTkFrame(frame_central, fg_color=cfg.get("bg_color"))
-    frame_pesquisa.pack(pady=5, fill="x")
+    # === Título ===
+    titulo = ctk.CTkLabel(
+        frame,
+        text="Estoque 🗂️",
+        font=("Inter", 22, "bold"),
+        text_color=cfg.get("font_color")
+    )
+    titulo.grid(row=0, column=0, columnspan=5, pady=(15, 20))
 
-    ctk.CTkLabel(frame_pesquisa, text="Pesquisar:", text_color=cfg.get("font_color")).pack(side="left", padx=5)
-    entry_pesquisa = ctk.CTkEntry(frame_pesquisa, fg_color="#FFFFFF", text_color=cfg.get("font_color"))
-    entry_pesquisa.pack(side="left", fill="x", expand=True, padx=5)
+    # === Treeview para mostrar produtos ===
+    columns = ("id", "nome", "fornecedor", "preco", "quantidade", "categoria", "status")
+    tree = ttk.Treeview(frame, columns=columns, show="headings", height=20)
+    for col in columns:
+        tree.heading(col, text=col.capitalize())
+        tree.column(col, width=120, anchor="center")
+    tree.grid(row=1, column=0, columnspan=5, padx=10, pady=10, sticky="nsew")
 
-    # ---------- TREEVIEW DE ESTOQUE ----------
-    colunas = ("Código", "Nome", "Categoria", "Preço", "Estoque")
-    tree = ttk.Treeview(frame_central, columns=colunas, show="headings", height=20)
-    for col in colunas:
-        tree.heading(col, text=col)
-        tree.column(col, anchor="center")
-    tree.pack(fill="both", expand=True, pady=10)
+    # Scrollbar vertical
+    scrollbar = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
+    tree.configure(yscroll=scrollbar.set)
+    scrollbar.grid(row=1, column=5, sticky="ns", pady=10)
 
-    # Preencher Treeview
+    # === Preencher Treeview com produtos ===
     produtos = listar_produtos()
+    tree.delete(*tree.get_children())
     for p in produtos:
-        tree.insert("", "end", values=(p[0], p[2], p[3], f"R$ {p[4]:.2f}", p[5]))
+        tree.insert("", "end", values=(
+            p[0],      # id
+            p[2],      # nome
+            p[3],      # fornecedor
+            f"R$ {p[4]:.2f}",  # preco
+            p[5],      # quantidade
+            p[6],      # categoria
+            p[1]       # status
+        ))
 
-    # Função de filtro
-    def filtrar_produtos(event=None):
-        termo = entry_pesquisa.get().lower()
-        tree.delete(*tree.get_children())
-        for p in produtos:
-            if termo in str(p[0]).lower() or termo in p[2].lower():
-                tree.insert("", "end", values=(p[0], p[2], p[3], f"R$ {p[4]:.2f}", p[5]))
-
-    entry_pesquisa.bind("<KeyRelease>", filtrar_produtos)
-
-    # ---------- BOTOES ----------
-    frame_botoes = ctk.CTkFrame(frame_central, fg_color=cfg.get("bg_color"))
-    frame_botoes.pack(pady=10)
-
-    botoes = [
-        ("Atualizar", lambda: filtrar_produtos()),
-        ("Fechar", janela.destroy)
-    ]
-
-    for index, (texto, comando) in enumerate(botoes):
-        ctk.CTkButton(frame_botoes, text=texto, fg_color=cfg.get("button_color"),
-                      width=160, height=50, command=comando).grid(row=0, column=index, padx=10)
+    # === Botão Fechar ===
+    btn_fechar = ctk.CTkButton(
+        frame,
+        text="❌ Fechar",
+        width=160,
+        height=40,
+        command=janela.destroy,
+        fg_color="#EF4444",
+        hover_color="#DC2626",
+        font=("Inter", 14, "bold"),
+        corner_radius=10
+    )
+    btn_fechar.grid(row=2, column=0, columnspan=5, pady=20)
 
     janela.mainloop()
-
-
-if __name__ == "__main__":
-    tela()

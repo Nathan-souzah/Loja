@@ -1,141 +1,141 @@
+# ui/vendas.py
 import customtkinter as ctk
-from tkinter import ttk, messagebox
+from tkinter import messagebox, ttk
 from produtos import listar_produtos
 from vendas import registrar_venda
 from ui.config import criar_janela
 
 def tela():
-    janela, cfg = criar_janela("PDV Profissional", "900x700")
-    carrinho = []
+    # === Janela ===
+    janela, cfg = criar_janela("Registrar Venda", "1000x750")
 
-    # ---------- PRODUTOS DO BANCO ----------
+    # === Frame Principal ===
+    frame = ctk.CTkFrame(janela, fg_color=cfg.get("bg_color"), corner_radius=12)
+    frame.place(relx=0.5, rely=0.5, anchor="center", relwidth=0.95, relheight=0.95)
+
+    # === Título ===
+    titulo = ctk.CTkLabel(frame, text="Registrar Venda 🛒", font=("Inter", 22, "bold"), text_color=cfg.get("font_color"))
+    titulo.grid(row=0, column=0, columnspan=6, pady=(15,25))
+
+    # === Produtos ===
     produtos = listar_produtos()
-    produtos_dict = {p[2]: p for p in produtos}  # {nome: produto_tuple}
-    nomes_produtos = list(produtos_dict.keys())
+    items = [f"{p[0]} - {p[2]} (Estoque: {p[7]})" for p in produtos]  # p[7] = quantidade
 
-    # ---------- FRAME DE ENTRADA ----------
-    frame_input = ctk.CTkFrame(janela, fg_color=cfg.get("bg_color"))
-    frame_input.pack(pady=10, fill="x", padx=20)
+    ctk.CTkLabel(frame, text="Produto:", font=("Inter", 14), text_color=cfg.get("font_color")).grid(row=1, column=0, sticky="e", padx=10)
+    comb_prod = ttk.Combobox(frame, values=items, state="readonly", width=50)
+    comb_prod.grid(row=1, column=1, columnspan=2, padx=10, pady=8, sticky="we")
 
-    # Produto
-    ctk.CTkLabel(frame_input, text="Produto:", text_color=cfg.get("font_color")).grid(row=0, column=0, padx=5, pady=5)
-    combo_produto = ttk.Combobox(frame_input, values=nomes_produtos, state="readonly", width=30)
-    combo_produto.grid(row=0, column=1, padx=5, pady=5)
-    if nomes_produtos:
-        combo_produto.current(0)
+    ctk.CTkLabel(frame, text="Quantidade:", font=("Inter", 14), text_color=cfg.get("font_color")).grid(row=1, column=3, sticky="e")
+    entry_qtd = ctk.CTkEntry(frame, fg_color="#1E293B", text_color=cfg.get("font_color"), border_color="#475569", corner_radius=8, height=32)
+    entry_qtd.grid(row=1, column=4, padx=5, sticky="we")
 
-    # Quantidade
-    ctk.CTkLabel(frame_input, text="Qtd:", text_color=cfg.get("font_color")).grid(row=0, column=2, padx=5, pady=5)
-    entry_qtd = ctk.CTkEntry(frame_input, fg_color="#FFFFFF", text_color=cfg.get("font_color"), width=5)
-    entry_qtd.grid(row=0, column=3, padx=5, pady=5)
+    # === Forma de Pagamento Global ===
+    ctk.CTkLabel(frame, text="Forma de Pagamento:", font=("Inter", 14), text_color=cfg.get("font_color")).grid(row=2, column=0, sticky="e", padx=10)
+    formas = ["💵 Dinheiro", "💳 Débito", "💳 Crédito"]
+    comb_forma = ttk.Combobox(frame, values=formas, state="readonly", width=20)
+    comb_forma.grid(row=2, column=1, padx=10, pady=8, sticky="w")
+    comb_forma.set(formas[0])
 
-    # Botão Adicionar
+    # === Treeview para carrinho ===
+    columns = ("id", "nome", "quantidade", "preco_unit")
+    tree = ttk.Treeview(frame, columns=columns, show="headings", height=12)
+    for col in columns:
+        tree.heading(col, text=col.capitalize())
+        tree.column(col, width=180, anchor="center")
+    tree.grid(row=3, column=0, columnspan=6, pady=15, sticky="nsew")
+
+    # Scrollbar vertical
+    scrollbar = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
+    tree.configure(yscroll=scrollbar.set)
+    scrollbar.grid(row=3, column=6, sticky="ns")
+
+    # === Total ===
+    ctk.CTkLabel(frame, text="Total:", font=("Inter", 16, "bold"), text_color=cfg.get("font_color")).grid(row=4, column=4, sticky="e")
+    total_entry = ctk.CTkEntry(frame, width=100, font=("Inter", 16, "bold"), justify="center")
+    total_entry.grid(row=4, column=5, sticky="w")
+    total_entry.configure(state="readonly")
+
+    # === Funções ===
+    def atualizar_total():
+        total = 0.0
+        for child in tree.get_children():
+            values = tree.item(child, "values")
+            try:
+                qtd = int(values[2])
+                preco = float(values[3])
+            except (IndexError, ValueError):
+                qtd = 0
+                preco = 0
+            total += qtd * preco
+
+        total_entry.configure(state="normal")
+        total_entry.delete(0, "end")
+        # Formata em R$ 0,00
+        total_entry.insert(0, f"R$ {total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        total_entry.configure(state="readonly")
+
     def adicionar_produto():
-        nome_produto = combo_produto.get()
-        if not nome_produto or nome_produto not in produtos_dict:
-            messagebox.showwarning("Erro", "Produto inválido.")
+        sel = comb_prod.get()
+        if not sel:
+            messagebox.showerror("Erro", "Selecione um produto.")
             return
-        produto = produtos_dict[nome_produto]
-
+        produto_id = int(sel.split(" - ")[0])
         try:
             qtd = int(entry_qtd.get())
-            if qtd <= 0: raise ValueError
-        except ValueError:
+            if qtd <= 0:
+                raise ValueError
+        except:
             messagebox.showerror("Erro", "Quantidade inválida.")
             return
 
-        produto_id, codigo, nome, marca, preco, estoque = produto
-        if qtd > estoque:
-            messagebox.showwarning("Erro", "Estoque insuficiente.")
+        prod = next((p for p in produtos if p[0] == produto_id), None)
+        if not prod:
+            messagebox.showerror("Erro", "Produto não encontrado.")
             return
 
-        subtotal = preco * qtd
-        carrinho.append((produto_id, nome, qtd, preco, subtotal))
-        tree.insert("", "end", values=(nome, qtd, f"R$ {preco:.2f}", f"R$ {subtotal:.2f}"))
+        preco_unit = float(prod[4])
+        tree.insert("", "end", values=(produto_id, prod[2], qtd, preco_unit))
         atualizar_total()
 
-    ctk.CTkButton(frame_input, text="Adicionar", fg_color=cfg.get("button_color"), width=120, height=35,
-                  command=adicionar_produto).grid(row=0, column=4, padx=10)
-
-    # ---------- FRAME PAGAMENTO ----------
-    frame_pagamento = ctk.CTkFrame(janela, fg_color=cfg.get("bg_color"))
-    frame_pagamento.pack(pady=10, fill="x", padx=20)
-
-    ctk.CTkLabel(frame_pagamento, text="Pagamento:", text_color=cfg.get("font_color")).grid(row=0, column=0, padx=5)
-    pagamento = ttk.Combobox(frame_pagamento, values=["Dinheiro", "Pix", "Cartão"], width=12)
-    pagamento.grid(row=0, column=1, padx=5)
-    pagamento.current(0)
-
-    sub_pagamento = ttk.Combobox(frame_pagamento, values=["Crédito", "Débito", "Alimentação"], width=12)
-    sub_pagamento.grid(row=0, column=2, padx=5)
-    sub_pagamento.grid_remove()  # inicialmente escondido
-
-    def update_sub_pagamento(event):
-        if pagamento.get() == "Cartão":
-            sub_pagamento.grid()
-        else:
-            sub_pagamento.grid_remove()
-    pagamento.bind("<<ComboboxSelected>>", update_sub_pagamento)
-
-    # ---------- CARRINHO ----------
-    tree = ttk.Treeview(janela, columns=("produto","qtd","preco","subtotal"), show="headings", height=15)
-    tree.heading("produto", text="Produto")
-    tree.heading("qtd", text="Qtd")
-    tree.heading("preco", text="Preço")
-    tree.heading("subtotal", text="Subtotal")
-    tree.pack(fill="both", expand=True, pady=10, padx=20)
-
-    lbl_total = ctk.CTkLabel(janela, text="Total: R$ 0.00", font=(cfg.get("font"), 16, "bold"), text_color=cfg.get("font_color"))
-    lbl_total.pack(pady=10)
-
-    # ---------- FUNÇÕES ----------
-    def atualizar_total():
-        total = sum(item[4] for item in carrinho)
-        lbl_total.configure(text=f"Total: R$ {total:.2f}")
-
-    def remover_item():
-        selected = tree.selection()
-        if not selected: return
-        index = tree.index(selected[0])
-        tree.delete(selected[0])
-        carrinho.pop(index)
+    def remover_produto():
+        sel = tree.selection()
+        if not sel:
+            messagebox.showerror("Erro", "Selecione um produto para remover.")
+            return
+        for item in sel:
+            tree.delete(item)
         atualizar_total()
 
     def finalizar_venda():
-        if not carrinho:
-            messagebox.showerror("Erro", "Carrinho vazio.")
+        if not tree.get_children():
+            messagebox.showerror("Erro", "Nenhum produto no carrinho.")
             return
-        forma = pagamento.get()
-        if forma=="Cartão": forma += " - " + sub_pagamento.get()
 
+        forma_pagamento = comb_forma.get()
         sucesso = True
-        for produto_id, nome, qtd, preco, subtotal in carrinho:
-            ok = registrar_venda(produto_id, qtd, preco, forma)
-            if not ok: sucesso = False
+        for item in tree.get_children():
+            pid, nome, qtd, preco_unit = tree.item(item, "values")
+            ok = registrar_venda(int(pid), int(qtd), float(preco_unit), forma_pagamento)
+            if not ok:
+                sucesso = False
 
         if sucesso:
             messagebox.showinfo("Sucesso", "Venda registrada com sucesso!")
             janela.destroy()
         else:
-            messagebox.showerror("Erro", "Ocorreu um problema ao registrar a venda.")
+            messagebox.showerror("Erro", "Falha ao registrar alguma venda.")
 
-    # ---------- BOTOES ----------
-    frame_botoes = ctk.CTkFrame(janela, fg_color=cfg.get("bg_color"))
-    frame_botoes.pack(pady=20)
+    # === Botões ===
+    btn_add_prod = ctk.CTkButton(frame, text="➕ Adicionar Produto", width=180, height=40, command=adicionar_produto, fg_color=cfg.get("button_color"))
+    btn_add_prod.grid(row=2, column=3, padx=10, pady=10)
 
-    botoes = [
-        ("Remover Item", remover_item),
-        ("Finalizar Venda", finalizar_venda),
-        ("Fechar", janela.destroy)
-    ]
+    btn_remove_prod = ctk.CTkButton(frame, text="🗑️ Remover Produto", width=180, height=40, command=remover_produto, fg_color="#EF4444")
+    btn_remove_prod.grid(row=2, column=4, padx=10, pady=10)
 
-    for index, (texto, comando) in enumerate(botoes):
-        ctk.CTkButton(frame_botoes, text=texto, fg_color=cfg.get("button_color"),
-                      width=180, height=50, command=comando).grid(row=0, column=index, padx=10, pady=5)
+    btn_finalizar = ctk.CTkButton(frame, text="💳 Finalizar Venda", width=200, height=40, command=finalizar_venda, fg_color="#10B981")
+    btn_finalizar.grid(row=5, column=0, columnspan=6, pady=20)
+
+    # Inicializa total
+    atualizar_total()
 
     janela.mainloop()
-
-
-if __name__ == "__main__":
-    tela()
-

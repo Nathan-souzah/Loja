@@ -1,125 +1,191 @@
+# ui/cadastro.py
 import customtkinter as ctk
 from tkinter import messagebox
-from produtos import adicionar_produto  # sua função que grava no banco
-from api import buscar_internet
+from tkinter import ttk
+import re
+from produtos import adicionar_produto
 from ui.config import criar_janela
 
+
 def tela():
-    janela, cfg = criar_janela("Cadastro de Produto - PDV Compacto", "1000x600")
+    janela, cfg = criar_janela("Cadastro de Produto", "950x650")
 
-    # ---------- CENTRALIZAÇÃO ----------
-    janela.grid_rowconfigure(0, weight=1)
-    janela.grid_rowconfigure(2, weight=1)
-    janela.grid_columnconfigure(0, weight=1)
-    janela.grid_columnconfigure(2, weight=1)
+    # === Frame Principal ===
+    frame = ctk.CTkFrame(
+        janela,
+        fg_color=cfg.get("bg_color"),
+        corner_radius=12
+    )
+    frame.place(relx=0.5, rely=0.5, anchor="center", relwidth=0.95, relheight=0.95)
 
-    frame_central = ctk.CTkFrame(janela, fg_color=cfg.get("bg_color"))
-    frame_central.grid(row=1, column=1, padx=20, pady=10)
+    titulo = ctk.CTkLabel(
+        frame,
+        text="Cadastro de Produto",
+        font=("Inter", 22, "bold"),
+        text_color=cfg.get("font_color")
+    )
+    titulo.grid(row=0, column=0, columnspan=6, pady=(15, 25))
 
-    for i in range(5):
-        frame_central.grid_rowconfigure(i, weight=1)
-    for j in range(6):
-        frame_central.grid_columnconfigure(j, weight=1, uniform="col")
-
-    # ---------- CAMPOS ----------
-    # Linha 1
-    ctk.CTkLabel(frame_central, text="Código de Barras:", text_color=cfg.get("font_color")).grid(row=0, column=0, sticky="e", padx=5, pady=5)
-    entry_codigo = ctk.CTkEntry(frame_central, fg_color="#FFFFFF", text_color=cfg.get("font_color"))
-    entry_codigo.grid(row=0, column=1, sticky="we", padx=5, pady=5)
-
-    ctk.CTkLabel(frame_central, text="Fornecedor:", text_color=cfg.get("font_color")).grid(row=0, column=2, sticky="e", padx=5, pady=5)
-    entry_fornecedor = ctk.CTkEntry(frame_central, fg_color="#FFFFFF", text_color=cfg.get("font_color"))
-    entry_fornecedor.grid(row=0, column=3, sticky="we", padx=5, pady=5)
-
-    # Linha 2
-    ctk.CTkLabel(frame_central, text="Nome:", text_color=cfg.get("font_color")).grid(row=1, column=0, sticky="e", padx=5, pady=5)
-    entry_nome = ctk.CTkEntry(frame_central, fg_color="#FFFFFF", text_color=cfg.get("font_color"))
-    entry_nome.grid(row=1, column=1, sticky="we", padx=5, pady=5)
-
-    ctk.CTkLabel(frame_central, text="Status:", text_color=cfg.get("font_color")).grid(row=1, column=2, sticky="e", padx=5, pady=5)
-    combobox_status = ctk.CTkComboBox(frame_central, values=["Ativo", "Inativo"], fg_color="#FFFFFF", text_color=cfg.get("font_color"))
-    combobox_status.set("Ativo")
-    combobox_status.grid(row=1, column=3, sticky="we", padx=5, pady=5)
-
-    # Linha 3
-    ctk.CTkLabel(frame_central, text="Marca:", text_color=cfg.get("font_color")).grid(row=2, column=0, sticky="e", padx=5, pady=5)
-    entry_marca = ctk.CTkEntry(frame_central, fg_color="#FFFFFF", text_color=cfg.get("font_color"))
-    entry_marca.grid(row=2, column=1, sticky="we", padx=5, pady=5)
-
-    ctk.CTkLabel(frame_central, text="Preço:", text_color=cfg.get("font_color")).grid(row=2, column=2, sticky="e", padx=5, pady=5)
-    entry_preco = ctk.CTkEntry(frame_central, fg_color="#FFFFFF", text_color=cfg.get("font_color"))
-    entry_preco.grid(row=2, column=3, sticky="we", padx=5, pady=5)
-
-    ctk.CTkLabel(frame_central, text="Quantidade:", text_color=cfg.get("font_color")).grid(row=2, column=4, sticky="e", padx=5, pady=5)
-    entry_qtd = ctk.CTkEntry(frame_central, fg_color="#FFFFFF", text_color=cfg.get("font_color"))
-    entry_qtd.grid(row=2, column=5, sticky="we", padx=5, pady=5)
-
-    # Linha 4
-    ctk.CTkLabel(frame_central, text="Categoria:", text_color=cfg.get("font_color")).grid(row=3, column=0, sticky="e", padx=5, pady=5)
-    categorias = ["Alimentício", "Eletrônico", "Higiene", "Vestuário", "Outros"]
-    combobox_categoria = ctk.CTkComboBox(frame_central, values=categorias, fg_color="#FFFFFF", text_color=cfg.get("font_color"))
-    combobox_categoria.set("Selecione a categoria")
-    combobox_categoria.grid(row=3, column=1, sticky="we", padx=5, pady=5)
-
-    ctk.CTkLabel(frame_central, text="Data Validade:", text_color=cfg.get("font_color")).grid(row=3, column=2, sticky="e", padx=5, pady=5)
-    entry_validade = ctk.CTkEntry(frame_central, fg_color="#FFFFFF", text_color=cfg.get("font_color"))
-    entry_validade.grid(row=3, column=3, sticky="we", padx=5, pady=5)
-
-    ctk.CTkLabel(frame_central, text="Código Interno:", text_color=cfg.get("font_color")).grid(row=3, column=4, sticky="e", padx=5, pady=5)
-    entry_codigo_interno = ctk.CTkEntry(frame_central, fg_color="#FFFFFF", text_color=cfg.get("font_color"))
-    entry_codigo_interno.grid(row=3, column=5, sticky="we", padx=5, pady=5)
-
-    # Linha 5
-    ctk.CTkLabel(frame_central, text="Observações:", text_color=cfg.get("font_color")).grid(row=4, column=0, sticky="e", padx=5, pady=5)
-    entrada_observacoes = ctk.CTkEntry(frame_central, fg_color="#FFFFFF", text_color=cfg.get("font_color"))
-    entrada_observacoes.grid(row=4, column=1, columnspan=5, sticky="we", padx=5, pady=5)
-
-    # ---------- FUNÇÃO SALVAR ----------
-    def salvar_produto():
-        try:
-            dados = {
-                "codigo_barras": entry_codigo.get().strip(),
-                "fornecedor": entry_fornecedor.get().strip(),
-                "nome": entry_nome.get().strip(),
-                "status": combobox_status.get(),
-                "marca": entry_marca.get().strip(),
-                "preco": float(entry_preco.get()),
-                "quantidade": int(entry_qtd.get()),
-                "categoria": combobox_categoria.get(),
-                "validade": entry_validade.get().strip(),
-                "codigo_interno": entry_codigo_interno.get().strip(),
-                "observacoes": entrada_observacoes.get().strip()
-            }
-        except ValueError:
-            messagebox.showerror("Erro", "Preço ou quantidade inválidos.")
-            return
-
-        # Chama sua função de adicionar no banco
-        sucesso = adicionar_produto(loja.db)
-        if sucesso:
-            messagebox.showinfo("Sucesso", "Produto cadastrado!")
-        else:
-            messagebox.showerror("Erro", "Não foi possível cadastrar o produto.")
-
-    # ---------- BOTOES ----------
-    frame_botoes = ctk.CTkFrame(janela, fg_color=cfg.get("bg_color"))
-    frame_botoes.grid(row=2, column=1, pady=20)
-
-    botoes = [
-        ("Buscar na Internet", lambda: buscar_internet(entry_codigo.get())),
-        ("Salvar", salvar_produto),
-        ("Limpar Campos", lambda: [entry.delete(0,"end") for entry in [
-            entry_codigo, entry_fornecedor, entry_nome, entry_marca, entry_preco, entry_qtd,
-            entry_validade, entry_codigo_interno, entrada_observacoes
-        ]]),
-        ("Cancelar", janela.destroy)
+    # === Campos ===
+    entries = {}
+    labels = [
+        ("Código de Barras", "codigo_barras"),
+        ("Fornecedor", "fornecedor"),
+        ("Nome", "nome"),
+        ("Status", "status"),
+        ("Marca", "marca"),
+        ("Preço", "preco"),
+        ("Quantidade", "quantidade"),
+        ("Categoria", "categoria"),
+        ("Validade (DD-MM-AAAA)", "validade"),
+        ("Código Interno", "codigo_interno"),
+        ("Observações", "observacoes"),
     ]
 
-    for index, (texto, comando) in enumerate(botoes):
-        ctk.CTkButton(frame_botoes, text=texto, fg_color=cfg.get("button_color"),
-                      width=160, height=50, command=comando).grid(row=0, column=index, padx=10)
+    # Opções para comboboxes
+    status_opcoes = ["Ativo", "Inativo", "Descontinuado"]
+    categoria_opcoes = ["Eletrônicos", "Roupas", "Calçados", "Alimentos", "Outros"]
+
+    # 6 colunas (label + entry em 2 colunas)
+    for i in range(6):
+        frame.grid_columnconfigure(i, weight=1, uniform="col")
+
+    # Distribui labels + inputs
+    for idx, (label_text, key) in enumerate(labels, start=1):
+        row = (idx - 1) // 2 + 1
+        col_base = ((idx - 1) % 2) * 3  # 0 ou 3
+
+        lbl = ctk.CTkLabel(
+            frame,
+            text=label_text,
+            font=("Inter", 13),
+            text_color=cfg.get("font_color"),
+            anchor="e"
+        )
+        lbl.grid(row=row, column=col_base, padx=8, pady=8, sticky="e")
+
+        # === Entrada específica para campos especiais ===
+        if key == "status":
+            ent = ctk.CTkComboBox(frame, values=status_opcoes, font=("Inter", 12))
+            ent.set(status_opcoes[0])
+        elif key == "categoria":
+            ent = ctk.CTkComboBox(frame, values=categoria_opcoes, font=("Inter", 12))
+            ent.set(categoria_opcoes[0])
+        elif key == "observacoes":
+            ent = ctk.CTkTextbox(frame, height=80, fg_color="#1E293B", text_color=cfg.get("font_color"))
+        else:
+            ent = ctk.CTkEntry(
+                frame,
+                placeholder_text=f"Digite {label_text.lower()}",
+                fg_color="#1E293B",
+                text_color=cfg.get("font_color"),
+                border_color="#475569",
+                corner_radius=8,
+                height=32
+            )
+            # Máscara de preço
+            if key == "preco":
+                def formatar_preco(event, entry=ent):
+                    texto = re.sub(r"[^\d]", "", entry.get())
+                    if texto == "":
+                        entry.delete(0, "end")
+                        return
+                    valor = int(texto)
+                    entry.delete(0, "end")
+                    entry.insert(0, f"R$ {valor/100:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+                ent.bind("<KeyRelease>", formatar_preco)
+            # Máscara de data
+            if key == "validade":
+                def formatar_data(event, entry=ent):
+                    texto = re.sub(r"[^0-9]", "", entry.get())
+                    if len(texto) > 8:
+                        texto = texto[:8]
+                    formatted = ""
+                    if len(texto) >= 2:
+                        formatted += texto[:2] + "-"
+                        if len(texto) >= 4:
+                            formatted += texto[2:4] + "-"
+                            formatted += texto[4:]
+                        else:
+                            formatted += texto[2:]
+                    else:
+                        formatted += texto
+                    entry.delete(0, "end")
+                    entry.insert(0, formatted)
+                ent.bind("<KeyRelease>", formatar_data)
+
+        if key != "observacoes":
+            ent.grid(row=row, column=col_base + 1, columnspan=2, padx=8, pady=8, sticky="we")
+        else:
+            ent.grid(row=row, column=col_base + 1, columnspan=2, padx=8, pady=8, sticky="we")
+
+        entries[key] = ent
+
+    # === Função de salvar ===
+    def salvar_produto():
+        dados = {}
+        for k, v in entries.items():
+            if k == "observacoes":
+                dados[k] = v.get("1.0", "end").strip()
+            elif k == "preco":
+                preco_texto = v.get().replace("R$", "").replace(".", "").replace(",", ".").strip()
+                try:
+                    dados[k] = float(preco_texto)
+                except:
+                    messagebox.showerror("Erro", "Preço inválido.")
+                    return
+            else:
+                dados[k] = v.get().strip()
+
+        if not dados["nome"] or not dados["preco"]:
+            messagebox.showerror("Erro", "Nome e Preço são obrigatórios.")
+            return
+
+        # Valida quantidade
+        try:
+            dados["quantidade"] = int(dados["quantidade"]) if dados["quantidade"] else 0
+        except:
+            messagebox.showerror("Erro", "Quantidade inválida.")
+            return
+
+        sucesso = adicionar_produto(dados)
+        if sucesso:
+            messagebox.showinfo("Sucesso", "Produto cadastrado com sucesso!")
+            for e in entries.values():
+                if key != "observacoes":
+                    e.delete(0, "end")
+                else:
+                    e.delete("1.0", "end")
+        else:
+            messagebox.showerror("Erro", "Falha ao cadastrar produto.")
+
+    # === Botões ===
+    btn_frame = ctk.CTkFrame(frame, fg_color=cfg.get("bg_color"))
+    btn_frame.grid(row=len(labels)//2 + 2, column=0, columnspan=6, pady=25)
+
+    btn_salvar = ctk.CTkButton(
+        btn_frame,
+        text="💾 Salvar Produto",
+        width=180,
+        height=40,
+        command=salvar_produto,
+        fg_color=cfg.get("button_color"),
+        font=("Inter", 14, "bold"),
+        corner_radius=10
+    )
+    btn_salvar.grid(row=0, column=0, padx=12)
+
+    btn_cancel = ctk.CTkButton(
+        btn_frame,
+        text="❌ Fechar",
+        width=160,
+        height=40,
+        command=janela.destroy,
+        fg_color="#EF4444",
+        hover_color="#DC2626",
+        font=("Inter", 14, "bold"),
+        corner_radius=10
+    )
+    btn_cancel.grid(row=0, column=1, padx=12)
 
     janela.mainloop()
-
-if __name__ == "__main__":
-    tela()

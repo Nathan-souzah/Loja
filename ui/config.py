@@ -1,155 +1,114 @@
+# ui/config.py
 import customtkinter as ctk
-from tkinter import colorchooser
+from tkinter import colorchooser, messagebox
 import json
 import os
 
 CONFIG_FILE = "config.json"
 
+
 class Config:
+    """
+    Classe de configuração com suporte a salvar/carregar JSON.
+    """
     def __init__(self):
-        if not os.path.exists(CONFIG_FILE):
-            self.dados = {
-                "bg_color": "#0C0C0C",
-                "font_color": "#F6F2F2",
-                "button_color": "#0078D7",  # nova opção
-                "font": "Arial",
-                "logo_path": ""
-            }
-            self.salvar()
-        else:
-            with open(CONFIG_FILE, "r") as f:
-                self.dados = json.load(f)
+        self.dados = {
+            "bg_color": "#0f1720",
+            "font_color": "#ffffff",
+            "button_color": "#1f6feb",
+            "font": "Inter 12"
+        }
+        self.carregar()
 
-    def get(self, chave):
-        return self.dados.get(chave)
-
-    def set(self, chave, valor):
-        self.dados[chave] = valor
-        self.salvar()
+    def carregar(self):
+        if os.path.exists(CONFIG_FILE):
+            try:
+                with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                    self.dados.update(json.load(f))
+            except Exception as e:
+                print("Erro ao carregar config.json:", e)
 
     def salvar(self):
-        with open(CONFIG_FILE, "w") as f:
-            json.dump(self.dados, f, indent=4)
+        try:
+            with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+                json.dump(self.dados, f, indent=4, ensure_ascii=False)
+        except Exception as e:
+            print("Erro ao salvar config.json:", e)
+
+    def get(self, key, default=None):
+        return self.dados.get(key, default)
+
+    def set(self, key, value):
+        self.dados[key] = value
+        self.salvar()
 
 
-def criar_janela(titulo, tamanho="800x800"):
-    """
-    Cria uma janela CustomTkinter com cores e fontes do Config
-    Retorna a janela e o objeto Config
-    """
+def criar_janela(title="App", size="900x600"):
     cfg = Config()
-    janela = ctk.CTkToplevel()
-    janela.title(titulo)
-    janela.geometry(tamanho)
+    janela = ctk.CTk()
+    janela.title(title)
+    janela.geometry(size)
     janela.configure(fg_color=cfg.get("bg_color"))
-    return janela, cfg
+
+    class CfgProxy(dict):
+        def get(self, k, default=None):
+            return cfg.get(k, default)
+
+    return janela, CfgProxy()
 
 
+# === Função que o main.py espera ===
 def tela():
     cfg = Config()
-    
-    janela = ctk.CTkToplevel()
+    janela = ctk.CTk()
     janela.title("Configurações")
-    janela.geometry("400x600")
-    janela.resizable(False, False)
+    janela.geometry("600x400")
     janela.configure(fg_color=cfg.get("bg_color"))
 
     frame = ctk.CTkFrame(janela, fg_color=cfg.get("bg_color"))
-    frame.pack(padx=20, pady=20, fill="both", expand=True)
+    frame.place(relx=0.5, rely=0.5, anchor="center", relwidth=0.9, relheight=0.9)
 
-    # ---------- Cor de fundo ----------
-    ctk.CTkLabel(frame, text="Cor de fundo:", text_color=cfg.get("font_color")).pack(anchor="w", pady=(0,5))
-    cor_bg_var = ctk.StringVar(value=cfg.get("bg_color"))
-    cor_bg_entry = ctk.CTkEntry(
-        frame,
-        textvariable=cor_bg_var,
-        fg_color="#FFFFFF",
-        text_color=cfg.get("font_color")
-    )
-    cor_bg_entry.pack(fill="x", pady=(0,5))
+    ctk.CTkLabel(frame, text="Configurações do Sistema",
+                 font=("Inter", 16, "bold"),
+                 text_color=cfg.get("font_color")).pack(pady=15)
 
+    # Escolher cor de fundo
     def escolher_cor_bg():
         cor = colorchooser.askcolor(title="Escolher cor de fundo")[1]
         if cor:
-            cor_bg_var.set(cor)
+            cfg.set("bg_color", cor)
+            janela.configure(fg_color=cor)
+            messagebox.showinfo("Sucesso", f"Cor de fundo alterada para {cor}")
 
-    ctk.CTkButton(
-        frame,
-        text="Selecionar cor de fundo",
-        fg_color=cfg.get("button_color"),
-        command=escolher_cor_bg
-    ).pack(pady=(0,10))
+    ctk.CTkButton(frame, text="Alterar Cor de Fundo",
+                  command=escolher_cor_bg,
+                  fg_color=cfg.get("button_color")).pack(pady=10)
 
-    # ---------- Cor da fonte ----------
-    ctk.CTkLabel(frame, text="Cor da fonte:", text_color=cfg.get("font_color")).pack(anchor="w", pady=(0,5))
-    cor_font_var = ctk.StringVar(value=cfg.get("font_color"))
-    cor_font_entry = ctk.CTkEntry(
-        frame,
-        textvariable=cor_font_var,
-        fg_color="#FFFFFF",
-        text_color=cfg.get("font_color")
-    )
-    cor_font_entry.pack(fill="x", pady=(0,5))
-
-    def escolher_cor_font():
+    # Escolher cor da fonte
+    def escolher_cor_fonte():
         cor = colorchooser.askcolor(title="Escolher cor da fonte")[1]
         if cor:
-            cor_font_var.set(cor)
+            cfg.set("font_color", cor)
+            messagebox.showinfo("Sucesso", f"Cor da fonte alterada para {cor}")
 
-    ctk.CTkButton(
-        frame,
-        text="Selecionar cor da fonte",
-        fg_color=cfg.get("button_color"),
-        command=escolher_cor_font
-    ).pack(pady=(0,10))
+    ctk.CTkButton(frame, text="Alterar Cor da Fonte",
+                  command=escolher_cor_fonte,
+                  fg_color=cfg.get("button_color")).pack(pady=10)
 
-    # ---------- Cor dos botões ----------
-    ctk.CTkLabel(frame, text="Cor dos botões:", text_color=cfg.get("font_color")).pack(anchor="w", pady=(0,5))
-    cor_button_var = ctk.StringVar(value=cfg.get("button_color"))
-    cor_button_entry = ctk.CTkEntry(
-        frame,
-        textvariable=cor_button_var,
-        fg_color="#FFFFFF",
-        text_color=cfg.get("font_color")
-    )
-    cor_button_entry.pack(fill="x", pady=(0,5))
-
-    def escolher_cor_button():
+    # Escolher cor dos botões
+    def escolher_cor_btn():
         cor = colorchooser.askcolor(title="Escolher cor dos botões")[1]
         if cor:
-            cor_button_var.set(cor)
+            cfg.set("button_color", cor)
+            messagebox.showinfo("Sucesso", f"Cor dos botões alterada para {cor}")
 
-    ctk.CTkButton(
-        frame,
-        text="Selecionar cor dos botões",
-        fg_color=cfg.get("button_color"),
-        command=escolher_cor_button
-    ).pack(pady=(0,10))
+    ctk.CTkButton(frame, text="Alterar Cor dos Botões",
+                  command=escolher_cor_btn,
+                  fg_color=cfg.get("button_color")).pack(pady=10)
 
-    # ---------- Fonte ----------
-    ctk.CTkLabel(frame, text="Fonte:", text_color=cfg.get("font_color")).pack(anchor="w", pady=(0,5))
-    fontes_disponiveis = ["Arial", "Helvetica", "Courier", "Times New Roman", "Verdana"]
-    fonte_var = ctk.StringVar(value=cfg.get("font"))
-    fonte_combo = ctk.CTkComboBox(
-        frame,
-        values=fontes_disponiveis,
-        variable=fonte_var,
-        fg_color="#FFFFFF",
-        text_color=cfg.get("font_color")
-    )
-    fonte_combo.pack(fill="x", pady=(0,10))
+    # Fechar
+    ctk.CTkButton(frame, text="Fechar",
+                  command=janela.destroy,
+                  fg_color=cfg.get("button_color")).pack(pady=20)
 
-    # ---------- Botão salvar ----------
-    def salvar_config():
-        cfg.set("bg_color", cor_bg_var.get())
-        cfg.set("font_color", cor_font_var.get())
-        cfg.set("button_color", cor_button_var.get())
-        cfg.set("font", fonte_var.get())
-        janela.destroy()
-
-    ctk.CTkButton(
-        frame,
-        text="Salvar",
-        fg_color=cfg.get("button_color"),
-        command=salvar_config
-    ).pack(pady=10)
+    janela.mainloop()
