@@ -1,4 +1,3 @@
-# ui/vendas.py
 import customtkinter as ctk
 from tkinter import messagebox, ttk
 from produtos import listar_produtos
@@ -6,20 +5,16 @@ from vendas import registrar_venda
 from ui.config import criar_janela
 
 def tela():
-    # === Janela ===
     janela, cfg = criar_janela("Registrar Venda", "1000x750")
 
-    # === Frame Principal ===
     frame = ctk.CTkFrame(janela, fg_color=cfg.get("bg_color"), corner_radius=12)
     frame.place(relx=0.5, rely=0.5, anchor="center", relwidth=0.95, relheight=0.95)
 
-    # === Título ===
     titulo = ctk.CTkLabel(frame, text="Registrar Venda 🛒", font=("Inter", 22, "bold"), text_color=cfg.get("font_color"))
     titulo.grid(row=0, column=0, columnspan=6, pady=(15,25))
 
-    # === Produtos ===
     produtos = listar_produtos()
-    items = [f"{p[0]} - {p[2]} (Estoque: {p[7]})" for p in produtos]  # p[7] = quantidade
+    items = [f"{p[0]} - {p[2]} (Estoque: {p[7]})" for p in produtos]  # id - nome (estoque)
 
     ctk.CTkLabel(frame, text="Produto:", font=("Inter", 14), text_color=cfg.get("font_color")).grid(row=1, column=0, sticky="e", padx=10)
     comb_prod = ttk.Combobox(frame, values=items, state="readonly", width=50)
@@ -29,14 +24,12 @@ def tela():
     entry_qtd = ctk.CTkEntry(frame, fg_color="#1E293B", text_color=cfg.get("font_color"), border_color="#475569", corner_radius=8, height=32)
     entry_qtd.grid(row=1, column=4, padx=5, sticky="we")
 
-    # === Forma de Pagamento Global ===
     ctk.CTkLabel(frame, text="Forma de Pagamento:", font=("Inter", 14), text_color=cfg.get("font_color")).grid(row=2, column=0, sticky="e", padx=10)
-    formas = ["💵 Dinheiro", "💳 Débito", "💳 Crédito"]
+    formas = ["💵 Dinheiro", "💳 Débito", "💳 Crédito", "💠 Pix"]
     comb_forma = ttk.Combobox(frame, values=formas, state="readonly", width=20)
     comb_forma.grid(row=2, column=1, padx=10, pady=8, sticky="w")
     comb_forma.set(formas[0])
 
-    # === Treeview para carrinho ===
     columns = ("id", "nome", "quantidade", "preco_unit")
     tree = ttk.Treeview(frame, columns=columns, show="headings", height=12)
     for col in columns:
@@ -44,18 +37,15 @@ def tela():
         tree.column(col, width=180, anchor="center")
     tree.grid(row=3, column=0, columnspan=6, pady=15, sticky="nsew")
 
-    # Scrollbar vertical
     scrollbar = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
     tree.configure(yscroll=scrollbar.set)
     scrollbar.grid(row=3, column=6, sticky="ns")
 
-    # === Total ===
     ctk.CTkLabel(frame, text="Total:", font=("Inter", 16, "bold"), text_color=cfg.get("font_color")).grid(row=4, column=4, sticky="e")
     total_entry = ctk.CTkEntry(frame, width=100, font=("Inter", 16, "bold"), justify="center")
     total_entry.grid(row=4, column=5, sticky="w")
     total_entry.configure(state="readonly")
 
-    # === Funções ===
     def atualizar_total():
         total = 0.0
         for child in tree.get_children():
@@ -64,14 +54,12 @@ def tela():
                 qtd = int(values[2])
                 preco = float(values[3])
             except (IndexError, ValueError):
-                qtd = 0
-                preco = 0
+                qtd, preco = 0, 0
             total += qtd * preco
 
         total_entry.configure(state="normal")
         total_entry.delete(0, "end")
-        # Formata em R$ 0,00
-        total_entry.insert(0, f"R$ {total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        total_entry.insert(0, str(total))
         total_entry.configure(state="readonly")
 
     def adicionar_produto():
@@ -112,20 +100,20 @@ def tela():
             return
 
         forma_pagamento = comb_forma.get()
-        sucesso = True
+
+        itens = []
         for item in tree.get_children():
             pid, nome, qtd, preco_unit = tree.item(item, "values")
-            ok = registrar_venda(int(pid), int(qtd), float(preco_unit), forma_pagamento)
-            if not ok:
-                sucesso = False
+            itens.append((int(pid), int(qtd), float(preco_unit)))
 
-        if sucesso:
+        ok = registrar_venda(forma_pagamento, itens)
+
+        if ok:
             messagebox.showinfo("Sucesso", "Venda registrada com sucesso!")
             janela.destroy()
         else:
-            messagebox.showerror("Erro", "Falha ao registrar alguma venda.")
+            messagebox.showerror("Erro", "Falha ao registrar a venda.")
 
-    # === Botões ===
     btn_add_prod = ctk.CTkButton(frame, text="➕ Adicionar Produto", width=180, height=40, command=adicionar_produto, fg_color=cfg.get("button_color"))
     btn_add_prod.grid(row=2, column=3, padx=10, pady=10)
 
@@ -135,7 +123,5 @@ def tela():
     btn_finalizar = ctk.CTkButton(frame, text="💳 Finalizar Venda", width=200, height=40, command=finalizar_venda, fg_color="#10B981")
     btn_finalizar.grid(row=5, column=0, columnspan=6, pady=20)
 
-    # Inicializa total
     atualizar_total()
-
     janela.mainloop()

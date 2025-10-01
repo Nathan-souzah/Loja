@@ -15,52 +15,21 @@ def tela():
     frame = ctk.CTkFrame(janela, fg_color=cfg.get("bg_color"), corner_radius=12)
     frame.place(relx=0.5, rely=0.5, anchor="center", relwidth=0.95, relheight=0.95)
 
-    # === Conexão com o banco ===
+    # === Conexão com o banco e leitura das vendas ===
     conn = conectar()
     try:
-        df = pd.read_sql("SELECT * FROM vendas", conn)
+        df = pd.read_sql("""
+            SELECT vc.id AS venda_id, vc.data, vc.forma_pagamento, vc.valor_total,
+                   vi.produto_id, vi.quantidade, vi.valor_unitario
+            FROM venda_cabecalho vc
+            LEFT JOIN venda_itens vi ON vc.id = vi.venda_id
+        """, conn)
     except Exception:
-        df = pd.DataFrame(columns=["id","produto_id","quantidade","valor_unitario","valor_total","forma_pagamento","data"])
+        df = pd.DataFrame(columns=["venda_id","data","forma_pagamento","valor_total","produto_id","quantidade","valor_unitario"])
     conn.close()
 
     if not df.empty:
         df["data"] = pd.to_datetime(df["data"])
-
-    # === Função para atualizar dashboard ===
-    def atualizar_dashboard():
-        start_date = entry_data_inicio.get_date()
-        end_date = entry_data_fim.get_date()
-
-        df_filtrado = df.copy()
-        if start_date:
-            df_filtrado = df_filtrado[df_filtrado["data"] >= pd.Timestamp(start_date)]
-        if end_date:
-            df_filtrado = df_filtrado[df_filtrado["data"] <= pd.Timestamp(end_date)]
-
-        faturamento = df_filtrado["valor_total"].sum() if not df_filtrado.empty else 0.0
-        ticket_medio = df_filtrado["valor_total"].mean() if not df_filtrado.empty else 0.0
-        qtd_vendas = len(df_filtrado)
-
-        lbl_fat.configure(text=f"💰 Faturamento: R$ {faturamento:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-        lbl_ticket.configure(text=f"🎯 Ticket Médio: R$ {ticket_medio:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-        lbl_qtd.configure(text=f"🛒 Número de Vendas: {qtd_vendas}")
-
-        # Gráfico
-        ax.clear()
-        if not df_filtrado.empty:
-            df_day = df_filtrado.groupby(df_filtrado["data"].dt.date)["valor_total"].sum()
-            df_day.plot(kind="line", marker="o", ax=ax, color="#10B981")
-            ax.set_title("Faturamento Diário", fontsize=14, fontweight="bold")
-            ax.set_ylabel("R$", fontsize=12)
-            ax.set_xlabel("Data", fontsize=12)
-            ax.grid(True, linestyle="--", alpha=0.5)
-        else:
-            ax.text(0.5, 0.5, "Sem dados para gráfico", ha="center", va="center", fontsize=12)
-            ax.set_xticks([])
-            ax.set_yticks([])
-
-        fig.tight_layout()
-        canvas.draw()
 
     # === Labels de resumo ===
     lbl_fat = ctk.CTkLabel(frame, text="", font=("Inter",16,"bold"), text_color=cfg.get("font_color"))
@@ -79,7 +48,7 @@ def tela():
     entry_data_fim = DateEntry(frame, width=12, background="#3B82F6", foreground="white", borderwidth=2, date_pattern="dd/mm/yyyy")
     entry_data_fim.place(relx=0.38, rely=0.22)
 
-    btn_filtrar = ctk.CTkButton(frame, text="📅 Filtrar", command=atualizar_dashboard, width=120, height=32, fg_color="#3B82F6")
+    btn_filtrar = ctk.CTkButton(frame, text="📅 Filtrar", width=120, height=32, fg_color="#3B82F6")
     btn_filtrar.place(relx=0.55, rely=0.22)
 
     # === Gráfico de linha ===
@@ -87,6 +56,47 @@ def tela():
     canvas = FigureCanvasTkAgg(fig, master=frame)
     canvas.draw()
     canvas.get_tk_widget().place(relx=0.5, rely=0.6, anchor="center")
+
+    # === Função para atualizar dashboard ===
+    def atualizar_dashboard():
+        start_date = entry_data_inicio.get_date()
+        end_date = entry_data_fim.get_date()
+
+        df_filtrado = df.copy()
+        if start_date:
+            df_filtrado = df_filtrado[df_filtrado["data"] >= pd.Timestamp(start_date)]
+        if end_date:
+            df_filtrado = df_filtrado[df_filtrado["data"] <= pd.Timestamp(end_date)]
+
+        # Agrupa por venda_id para evitar contar itens duplicados
+        df_unicas = df_filtrado.drop_duplicates(subset="venda_id")
+
+        faturamento = df_unicas["valor_total"].sum() if not df_unicas.empty else 0.0
+        ticket_medio = df_unicas["valor_total"].mean() if not df_unicas.empty else 0.0
+        qtd_vendas = len(df_unicas)
+
+        lbl_fat.configure(text=f"💰 Faturamento: R$ {faturamento:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        lbl_ticket.configure(text=f"🎯 Ticket Médio: R$ {ticket_medio:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        lbl_qtd.configure(text=f"🛒 Número de Vendas: {qtd_vendas}")
+
+        # Gráfico diário
+        ax.clear()
+        if not df_unicas.empty:
+            df_day = df_unicas.groupby(df_unicas["data"].dt.date)["valor_total"].sum()
+            df_day.plot(kind="line", marker="o", ax=ax, color="#10B981")
+            ax.set_title("Faturamento Diário", fontsize=14, fontweight="bold")
+            ax.set_ylabel("R$", fontsize=12)
+            ax.set_xlabel("Data", fontsize=12)
+            ax.grid(True, linestyle="--", alpha=0.5)
+        else:
+            ax.text(0.5, 0.5, "Sem dados para gráfico", ha="center", va="center", fontsize=12)
+            ax.set_xticks([])
+            ax.set_yticks([])
+
+        fig.tight_layout()
+        canvas.draw()
+
+    btn_filtrar.configure(command=atualizar_dashboard)
 
     # === Botão Fechar ===
     btn_fechar = ctk.CTkButton(frame, text="Fechar", width=120, height=36, command=janela.destroy, fg_color=cfg.get("button_color"))

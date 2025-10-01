@@ -1,46 +1,42 @@
-# vendas.py
 from database import conectar
-from produtos import buscar_por_codigo, atualizar_estoque
-import datetime
+from datetime import datetime
 
-def registrar_venda(produto_id: int, quantidade: int, valor_unitario: float, forma_pagamento: str) -> bool:
+def registrar_venda(forma_pagamento, itens):
     """
-    Registra uma venda e atualiza estoque.
-    produto_id: id do produto (INTEGER)
-    quantidade: quantidade vendida (INTEGER)
-    valor_unitario: preço por unidade
-    forma_pagamento: texto (ex: 'Dinheiro', 'Cartão - Crédito')
+    Registra uma venda no banco.
+    itens = lista de tuplas (produto_id, quantidade, preco_unitario)
     """
+    conn = conectar()
+    cursor = conn.cursor()
+
     try:
-        conn = conectar()
-        cursor = conn.cursor()
+        # Calcula total
+        total = sum(qtd * preco for _, qtd, preco in itens)
 
-        # verifica estoque atual
-        cursor.execute("SELECT quantidade FROM produtos WHERE id = ?", (produto_id,))
-        row = cursor.fetchone()
-        if not row:
-            conn.close()
-            return False
-        estoque_atual = row[0]
-        if quantidade > estoque_atual:
-            conn.close()
-            return False
-
-        valor_total = float(valor_unitario) * int(quantidade)
-        data = datetime.datetime.now().isoformat(timespec='seconds')
-
+        # Cabeçalho
+        data = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         cursor.execute("""
-            INSERT INTO vendas (produto_id, quantidade, valor_unitario, valor_total, forma_pagamento, data)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (produto_id, quantidade, valor_unitario, valor_total, forma_pagamento, data))
+            INSERT INTO venda_cabecalho (data, forma_pagamento, valor_total)
+            VALUES (?, ?, ?)
+        """, (data, forma_pagamento, total))
+        venda_id = cursor.lastrowid
 
-        # atualiza estoque
-        novo_estoque = estoque_atual - quantidade
-        cursor.execute("UPDATE produtos SET quantidade = ? WHERE id = ?", (novo_estoque, produto_id))
+        # Itens
+        for pid, qtd, preco in itens:
+            cursor.execute("""
+                INSERT INTO venda_itens (venda_id, produto_id, quantidade, valor_unitario, valor_total)
+                VALUES (?, ?, ?, ?, ?)
+            """, (venda_id, pid, qtd, preco, qtd * preco))
+
+            # Atualiza estoque
+            cursor.execute("UPDATE produtos SET quantidade = quantidade - ? WHERE id = ?", (qtd, pid))
 
         conn.commit()
         conn.close()
         return True
+
     except Exception as e:
-        print("Erro registrar_venda:", e)
+        print("Erro ao registrar venda:", e)
+        conn.rollback()
+        conn.close()
         return False
