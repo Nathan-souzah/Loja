@@ -26,7 +26,7 @@ def main():
         ("Ver Estoque", estoque.tela),
         ("Dashboard de Indicadores", dashboard.tela),
         ("Configurações", cfg_module.tela),
-        ("Sair", root.quit)
+        ("Sair", root.destroy)
     ]
 
     # Inserir botões em grid: 3 por linha
